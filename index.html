@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finland (500×653 px) Photo Editor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+}
+.app {
+  display: grid;
+  grid-template-columns: auto 280px;
+  gap: 24px;
+  max-width: 960px;
+}
+h1 {
+  grid-column: 1 / -1;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+.canvas-col { display: flex; flex-direction: column; gap: 12px; }
+.canvas-wrap {
+  position: relative;
+  background: #d0d0d0;
+  cursor: grab;
+  border: 2px solid #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.canvas-wrap:active { cursor: grabbing; }
+.canvas-wrap.empty { cursor: default; }
+canvas { display: block; }
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(26, 26, 46, 0.85);
+  color: #aaa;
+  font-size: 15px;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.drop-overlay.hidden { opacity: 0; pointer-events: none; }
+.drop-overlay svg { width: 64px; height: 64px; stroke: #666; fill: none; stroke-width: 1.5; }
+.drop-overlay .browse-btn {
+  pointer-events: auto;
+  padding: 8px 20px;
+  background: #2d6cdf;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.drop-overlay .browse-btn:hover { background: #3b7bf7; }
+.drop-overlay.drag-hover { background: rgba(45, 108, 223, 0.3); border: 2px dashed #2d6cdf; }
+
+.rotation-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+.rotation-row label { font-size: 13px; color: #aaa; white-space: nowrap; }
+.rotation-row input[type=range] { flex: 1; accent-color: #2d6cdf; }
+.rotation-row .rot-val { font-size: 13px; min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.panel { display: flex; flex-direction: column; gap: 16px; }
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+}
+
+.template-select {
+  width: 100%;
+  padding: 6px 8px;
+  background: #222;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.custom-fields {
+  display: grid;
+  grid-template-columns: auto 72px;
+  gap: 3px 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  align-items: center;
+}
+.custom-fields label {
+  color: #aaa;
+}
+.custom-fields input[type="number"] {
+  width: 100%;
+  padding: 2px 5px;
+  background: #222;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.custom-fields input[type="color"] {
+  width: 100%;
+  height: 22px;
+  padding: 1px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.measurements { display: flex; flex-direction: column; gap: 6px; }
+.measure-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #222;
+}
+.measure-row .label { color: #bbb; }
+.measure-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.measure-row.valid .value { color: #4caf50; }
+.measure-row.invalid .value { color: #f44336; }
+.measure-row.na .value { color: #666; }
+
+.controls-help {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.7;
+  background: #222;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.controls-help kbd {
+  display: inline-block;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 11px;
+  color: #ccc;
+  font-family: inherit;
+}
+
+.export-area { display: flex; flex-direction: column; gap: 8px; }
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary { background: #2d6cdf; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #3b7bf7; }
+.btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; }
+.btn-secondary { background: #333; color: #ccc; }
+.btn-secondary:hover:not(:disabled) { background: #444; }
+.btn-secondary:disabled { color: #555; cursor: not-allowed; }
+.export-info { font-size: 12px; color: #888; min-height: 18px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1 id="appTitle">Finland (500×653 px) Photo Editor</h1>
+
+  <div class="canvas-col">
+    <div class="canvas-wrap empty" id="canvasWrap">
+      <canvas id="canvas" width="500" height="653"></canvas>
+      <div class="drop-overlay" id="dropOverlay">
+        <svg viewBox="0 0 64 64"><path d="M32 8v36M20 20l12-12 12 12"/><rect x="8" y="40" width="48" height="18" rx="4"/></svg>
+        <div>Drop a photo here</div>
+        <button class="browse-btn" id="browseBtn">Browse files</button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+      </div>
+    </div>
+    <div class="rotation-row">
+      <label for="rotSlider">Rotation</label>
+      <input type="range" id="rotSlider" min="-10" max="10" step="0.1" value="0" disabled>
+      <span class="rot-val" id="rotVal">0.0°</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div>
+      <div class="section-title">Template</div>
+      <select id="templateSelect" class="template-select"></select>
+      <div id="customFields" class="custom-fields" style="display:none"></div>
+    </div>
+
+    <div>
+      <div class="section-title">Measurements</div>
+      <div class="measurements" id="measurements">
+        <div class="measure-row na" id="mTop"><span class="label">Top margin</span><span class="value">—</span></div>
+        <div class="measure-row na" id="mFace"><span class="label">Face height</span><span class="value">—</span></div>
+        <div class="measure-row na" id="mBot"><span class="label">Bottom margin</span><span class="value">—</span></div>
+        <div class="measure-row na" id="mCenter"><span class="label">Center offset</span><span class="value">—</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Controls</div>
+      <div class="controls-help">
+        <kbd>Drag</kbd> photo to pan<br>
+        <kbd>Scroll</kbd> to zoom toward cursor<br>
+        <kbd>Slider</kbd> to rotate ±10°<br>
+        Drag <span style="color:#e8d44d">yellow</span> lines → crown &amp; chin<br>
+        Drag <span style="color:#5599ff">blue</span> line → face center
+      </div>
+    </div>
+
+    <div class="export-area">
+      <div class="section-title">Export</div>
+      <button class="btn btn-primary" id="exportBtn" disabled>Export JPEG (500×653)</button>
+      <button class="btn btn-primary" id="printBtn" disabled>Print Layout (10×15 cm)</button>
+      <button class="btn btn-secondary" id="resetBtn" disabled>Load different photo</button>
+      <div class="export-info" id="exportInfo"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Templates ──
+const TEMPLATES = [
+  {
+    id: 'finland',
+    name: 'Finland (500×653 px)',
+    width: 500, height: 653,
+    mmWidth: 36, mmHeight: 47,
+    topMargin: [56, 84],
+    faceHeight: [445, 500],
+    bottomMargin: [96, 124],
+    centerTolerance: 21,
+    maxFileKB: 250,
+    background: '#d0d0d0',
+  },
+  {
+    id: 'schengen',
+    name: 'Schengen / EU (413×531 px)',
+    width: 413, height: 531,
+    mmWidth: 35, mmHeight: 45,
+    topMargin: [35, 70],
+    faceHeight: [378, 425],
+    bottomMargin: [59, 130],
+    centerTolerance: 20,
+    maxFileKB: 500,
+    background: '#e0e0e0',
+  },
+  {
+    id: 'us',
+    name: 'USA (600×600 px)',
+    width: 600, height: 600,
+    mmWidth: 51, mmHeight: 51,
+    topMargin: [56, 94],
+    faceHeight: [300, 414],
+    bottomMargin: [94, 244],
+    centerTolerance: 30,
+    maxFileKB: 240,
+    background: '#ffffff',
+  },
+  {
+    id: 'custom',
+    name: 'Custom',
+    width: 500, height: 500,
+    mmWidth: 42, mmHeight: 42,
+    topMargin: [50, 80],
+    faceHeight: [300, 400],
+    bottomMargin: [50, 80],
+    centerTolerance: 20,
+    maxFileKB: 500,
+    background: '#ffffff',
+  },
+];
+
+let T = TEMPLATES[0]; // active template
+
+// ── State ──
+const S = {
+  img: null,
+  panX: 0, panY: 0,
+  scale: 1,
+  rotation: 0,
+  crownY: 70,
+  chinY: 540,
+  faceCenterX: 250,
+  dragging: null, // 'pan' | 'crown' | 'chin' | 'center'
+  dragStart: null,
+  loaded: false,
+  // touch
+  lastTouches: null,
+  pinchDist0: null,
+  pinchScale0: null,
+};
+
+const MARKER_HIT = 12; // px hit zone for markers
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvasWrap');
+const dropOverlay = document.getElementById('dropOverlay');
+const browseBtn = document.getElementById('browseBtn');
+const fileInput = document.getElementById('fileInput');
+const rotSlider = document.getElementById('rotSlider');
+const rotVal = document.getElementById('rotVal');
+const exportBtn = document.getElementById('exportBtn');
+const printBtn = document.getElementById('printBtn');
+const resetBtn = document.getElementById('resetBtn');
+const exportInfo = document.getElementById('exportInfo');
+const templateSelect = document.getElementById('templateSelect');
+const customFieldsDiv = document.getElementById('customFields');
+const appTitle = document.getElementById('appTitle');
+
+// ── Template Selector ──
+TEMPLATES.forEach((t, i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = t.name;
+  templateSelect.appendChild(opt);
+});
+
+templateSelect.addEventListener('change', () => {
+  const tmpl = TEMPLATES[parseInt(templateSelect.value)];
+  customFieldsDiv.style.display = tmpl.id === 'custom' ? 'grid' : 'none';
+  applyTemplate(tmpl);
+});
+
+// ── Custom Fields ──
+const CUSTOM_FIELD_DEFS = [
+  { key: 'width', label: 'Width (px)' },
+  { key: 'height', label: 'Height (px)' },
+  { key: 'mmWidth', label: 'Width (mm)' },
+  { key: 'mmHeight', label: 'Height (mm)' },
+  { key: 'topMargin.0', label: 'Top margin min' },
+  { key: 'topMargin.1', label: 'Top margin max' },
+  { key: 'faceHeight.0', label: 'Face height min' },
+  { key: 'faceHeight.1', label: 'Face height max' },
+  { key: 'bottomMargin.0', label: 'Bottom margin min' },
+  { key: 'bottomMargin.1', label: 'Bottom margin max' },
+  { key: 'centerTolerance', label: 'Center tol. (px)' },
+  { key: 'maxFileKB', label: 'Max file (KB)' },
+  { key: 'background', label: 'Background', type: 'color' },
+];
+
+function getCustomVal(key) {
+  const ct = TEMPLATES[TEMPLATES.length - 1]; // custom template
+  const parts = key.split('.');
+  if (parts.length === 2) return ct[parts[0]][parseInt(parts[1])];
+  return ct[parts[0]];
+}
+
+function setCustomVal(key, val) {
+  const ct = TEMPLATES[TEMPLATES.length - 1];
+  const parts = key.split('.');
+  if (parts.length === 2) ct[parts[0]][parseInt(parts[1])] = val;
+  else ct[parts[0]] = val;
+}
+
+CUSTOM_FIELD_DEFS.forEach(def => {
+  const lbl = document.createElement('label');
+  lbl.textContent = def.label;
+  const inp = document.createElement('input');
+  const isColor = def.type === 'color';
+  inp.type = isColor ? 'color' : 'number';
+  inp.value = isColor ? getCustomVal(def.key) : getCustomVal(def.key);
+  if (!isColor) inp.min = '0';
+  inp.dataset.key = def.key;
+  inp.addEventListener('input', () => {
+    const v = isColor ? inp.value : parseInt(inp.value) || 0;
+    setCustomVal(def.key, v);
+    applyTemplate(TEMPLATES[TEMPLATES.length - 1]);
+  });
+  customFieldsDiv.appendChild(lbl);
+  customFieldsDiv.appendChild(inp);
+});
+
+// ── Apply Template ──
+function applyTemplate(template) {
+  T = template;
+  canvas.width = T.width;
+  canvas.height = T.height;
+  wrap.style.width = T.width + 'px';
+  wrap.style.height = T.height + 'px';
+  // Reset markers to sensible defaults
+  S.crownY = (T.topMargin[0] + T.topMargin[1]) / 2;
+  S.chinY = T.height - (T.bottomMargin[0] + T.bottomMargin[1]) / 2;
+  S.faceCenterX = T.width / 2;
+  // Re-fit image if loaded
+  if (S.img) {
+    S.scale = T.height / S.img.height;
+    S.panX = (T.width - S.img.width * S.scale) / 2;
+    S.panY = 0;
+  }
+  // Update export button label
+  exportBtn.textContent = `Export JPEG (${T.width}×${T.height})`;
+  // Update title
+  const title = T.name + ' Photo Editor';
+  appTitle.textContent = title;
+  document.title = title;
+  render();
+}
+
+// ── File Loading ──
+browseBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadImage(e.target.files[0]); });
+
+wrap.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('drag-hover'); });
+wrap.addEventListener('dragleave', () => dropOverlay.classList.remove('drag-hover'));
+wrap.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('drag-hover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      S.img = img;
+      S.rotation = 0;
+      rotSlider.value = 0;
+      rotVal.textContent = '0.0°';
+      // scale to fill vertically, center horizontally
+      S.scale = T.height / img.height;
+      S.panX = (T.width - img.width * S.scale) / 2;
+      S.panY = 0;
+      // reset markers
+      S.crownY = (T.topMargin[0] + T.topMargin[1]) / 2;
+      S.chinY = T.height - (T.bottomMargin[0] + T.bottomMargin[1]) / 2;
+      S.faceCenterX = T.width / 2;
+      S.loaded = true;
+      dropOverlay.classList.add('hidden');
+      wrap.classList.remove('empty');
+      rotSlider.disabled = false;
+      resetBtn.disabled = false;
+      exportInfo.textContent = '';
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+resetBtn.addEventListener('click', () => {
+  S.img = null;
+  S.loaded = false;
+  S.rotation = 0;
+  rotSlider.value = 0;
+  rotSlider.disabled = true;
+  resetBtn.disabled = true;
+  exportBtn.disabled = true;
+  printBtn.disabled = true;
+  exportInfo.textContent = '';
+  dropOverlay.classList.remove('hidden');
+  wrap.classList.add('empty');
+  fileInput.value = '';
+  updateMeasurements();
+  ctx.clearRect(0, 0, T.width, T.height);
+});
+
+// ── Rotation Slider ──
+rotSlider.addEventListener('input', () => {
+  S.rotation = parseFloat(rotSlider.value);
+  rotVal.textContent = S.rotation.toFixed(1) + '°';
+  render();
+});
+
+// ── Render ──
+function render() {
+  // 1. Background
+  ctx.fillStyle = T.background;
+  ctx.fillRect(0, 0, T.width, T.height);
+
+  // 2. Image with transforms
+  if (S.img) {
+    ctx.save();
+    const cx = S.panX + (S.img.width * S.scale) / 2;
+    const cy = S.panY + (S.img.height * S.scale) / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(S.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+    ctx.drawImage(S.img, S.panX, S.panY, S.img.width * S.scale, S.img.height * S.scale);
+    ctx.restore();
+  }
+
+  // 3. Guide overlays
+  drawGuides();
+
+  // 4. Markers
+  if (S.loaded) drawMarkers();
+
+  // 5. Update measurements
+  updateMeasurements();
+}
+
+function drawGuides() {
+  // Crown zone (green band)
+  ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
+  ctx.fillRect(0, T.topMargin[0], T.width, T.topMargin[1] - T.topMargin[0]);
+  // Chin zone (green band)
+  const chinZoneTop = T.height - T.bottomMargin[1];
+  const chinZoneBot = T.height - T.bottomMargin[0];
+  ctx.fillRect(0, chinZoneTop, T.width, chinZoneBot - chinZoneTop);
+  // Center tolerance zone (blue band)
+  ctx.fillStyle = 'rgba(85, 153, 255, 0.12)';
+  ctx.fillRect(T.width / 2 - T.centerTolerance, 0, T.centerTolerance * 2, T.height);
+  // Dashed center line
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(85, 153, 255, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(T.width / 2, 0);
+  ctx.lineTo(T.width / 2, T.height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawMarkers() {
+  // Crown marker (yellow horizontal line)
+  drawHLine(S.crownY, '#e8d44d', 'Crown', true);
+  // Chin marker (yellow horizontal line)
+  drawHLine(S.chinY, '#e8d44d', 'Chin', false);
+  // Face center marker (blue vertical line)
+  drawVLine(S.faceCenterX, '#5599ff', 'Center');
+  // Face height bracket on the right
+  drawBracket();
+}
+
+function drawHLine(y, color, label, labelAbove) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(T.width, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Grip handle
+  ctx.fillStyle = color;
+  const hw = 40, hh = 7;
+  const hx = 16;
+  roundRect(ctx, hx, y - hh, hw, hh * 2, 3);
+  ctx.fill();
+  // Grip dots
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(hx + 12 + i * 8, y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Label
+  ctx.fillStyle = color;
+  ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  const ly = labelAbove ? y - 10 : y + 16;
+  ctx.fillText(label, 62, ly);
+}
+
+function drawVLine(x, color, label) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, T.height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Grip handle
+  ctx.fillStyle = color;
+  const hw = 7, hh = 40;
+  const hy = T.height / 2 - hh;
+  roundRect(ctx, x - hw, hy, hw * 2, hh * 2, 3);
+  ctx.fill();
+  // Grip dots
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(x, hy + 24 + i * 8, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Label
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x, hy - 6);
+  ctx.restore();
+}
+
+function drawBracket() {
+  const bx = T.width - 18;
+  const y1 = S.crownY;
+  const y2 = S.chinY;
+  const fh = Math.round(y2 - y1);
+  ctx.strokeStyle = '#e8d44d';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  // top tick
+  ctx.moveTo(bx - 6, y1); ctx.lineTo(bx, y1);
+  // vertical
+  ctx.lineTo(bx, y2);
+  // bottom tick
+  ctx.lineTo(bx - 6, y2);
+  ctx.stroke();
+  // label
+  ctx.fillStyle = '#e8d44d';
+  ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.save();
+  ctx.translate(bx - 8, (y1 + y2) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText(fh + ' px', 0, 0);
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── Measurements ──
+function updateMeasurements() {
+  const topRange = `${T.topMargin[0]}\u2013${T.topMargin[1]} px`;
+  const faceRange = `${T.faceHeight[0]}\u2013${T.faceHeight[1]} px`;
+  const botRange = `${T.bottomMargin[0]}\u2013${T.bottomMargin[1]} px`;
+  const centerRange = `\u2264${T.centerTolerance} px`;
+
+  if (!S.loaded) {
+    setMeasure('mTop', '\u2014', 'na', topRange);
+    setMeasure('mFace', '\u2014', 'na', faceRange);
+    setMeasure('mBot', '\u2014', 'na', botRange);
+    setMeasure('mCenter', '\u2014', 'na', centerRange);
+    exportBtn.disabled = true;
+    printBtn.disabled = true;
+    return;
+  }
+  const topM = Math.round(S.crownY);
+  const faceH = Math.round(S.chinY - S.crownY);
+  const botM = Math.round(T.height - S.chinY);
+  const centerOff = Math.round(Math.abs(S.faceCenterX - T.width / 2));
+
+  const topOk = topM >= T.topMargin[0] && topM <= T.topMargin[1];
+  const faceOk = faceH >= T.faceHeight[0] && faceH <= T.faceHeight[1];
+  const botOk = botM >= T.bottomMargin[0] && botM <= T.bottomMargin[1];
+  const centerOk = centerOff <= T.centerTolerance;
+
+  setMeasure('mTop', topM + ' px', topOk ? 'valid' : 'invalid', topRange);
+  setMeasure('mFace', faceH + ' px', faceOk ? 'valid' : 'invalid', faceRange);
+  setMeasure('mBot', botM + ' px', botOk ? 'valid' : 'invalid', botRange);
+  setMeasure('mCenter', centerOff + ' px', centerOk ? 'valid' : 'invalid', centerRange);
+
+  const allOk = topOk && faceOk && botOk && centerOk;
+  exportBtn.disabled = !allOk;
+  printBtn.disabled = !allOk;
+}
+
+function setMeasure(id, value, state, range) {
+  const el = document.getElementById(id);
+  el.className = 'measure-row ' + state;
+  el.querySelector('.value').textContent = value;
+  el.querySelector('.label').textContent = el.querySelector('.label').textContent.split('(')[0].trim();
+  if (state !== 'na') {
+    el.querySelector('.label').textContent += ' (' + range + ')';
+  }
+}
+
+// ── Mouse Interactions ──
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function hitTestMarker(x, y) {
+  if (!S.loaded) return null;
+  if (Math.abs(y - S.crownY) < MARKER_HIT) return 'crown';
+  if (Math.abs(y - S.chinY) < MARKER_HIT) return 'chin';
+  if (Math.abs(x - S.faceCenterX) < MARKER_HIT) return 'center';
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (!S.loaded) return;
+  const p = canvasPos(e);
+  const marker = hitTestMarker(p.x, p.y);
+  if (marker) {
+    S.dragging = marker;
+  } else {
+    S.dragging = 'pan';
+  }
+  S.dragStart = { x: e.clientX, y: e.clientY, panX: S.panX, panY: S.panY, crownY: S.crownY, chinY: S.chinY, faceCenterX: S.faceCenterX };
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+  if (!S.dragging) {
+    if (S.loaded) {
+      const p = canvasPos(e);
+      const marker = hitTestMarker(p.x, p.y);
+      if (marker === 'crown' || marker === 'chin') canvas.style.cursor = 'ns-resize';
+      else if (marker === 'center') canvas.style.cursor = 'ew-resize';
+      else canvas.style.cursor = 'grab';
+    }
+    return;
+  }
+  const dx = e.clientX - S.dragStart.x;
+  const dy = e.clientY - S.dragStart.y;
+  if (S.dragging === 'pan') {
+    S.panX = S.dragStart.panX + dx;
+    S.panY = S.dragStart.panY + dy;
+  } else if (S.dragging === 'crown') {
+    S.crownY = clamp(S.dragStart.crownY + dy, 0, S.chinY - 10);
+  } else if (S.dragging === 'chin') {
+    S.chinY = clamp(S.dragStart.chinY + dy, S.crownY + 10, T.height);
+  } else if (S.dragging === 'center') {
+    S.faceCenterX = clamp(S.dragStart.faceCenterX + dx, 0, T.width);
+  }
+  render();
+});
+
+window.addEventListener('mouseup', () => {
+  if (S.dragging === 'pan') canvas.style.cursor = 'grab';
+  S.dragging = null;
+  S.dragStart = null;
+});
+
+// Zoom toward cursor
+canvas.addEventListener('wheel', e => {
+  if (!S.loaded) return;
+  e.preventDefault();
+  const p = canvasPos(e);
+  const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+  const newScale = S.scale * factor;
+  S.panX = p.x - (p.x - S.panX) * factor;
+  S.panY = p.y - (p.y - S.panY) * factor;
+  S.scale = newScale;
+  render();
+}, { passive: false });
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// ── Touch Support ──
+canvas.addEventListener('touchstart', e => {
+  if (!S.loaded) return;
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    const p = canvasPos(t);
+    const marker = hitTestMarker(p.x, p.y);
+    if (marker) {
+      S.dragging = marker;
+    } else {
+      S.dragging = 'pan';
+    }
+    S.dragStart = { x: t.clientX, y: t.clientY, panX: S.panX, panY: S.panY, crownY: S.crownY, chinY: S.chinY, faceCenterX: S.faceCenterX };
+  } else if (e.touches.length === 2) {
+    S.dragging = 'pinch';
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    S.pinchDist0 = Math.hypot(dx, dy);
+    S.pinchScale0 = S.scale;
+    S.dragStart = {
+      panX: S.panX, panY: S.panY,
+      midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+    };
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  if (!S.dragging) return;
+  e.preventDefault();
+  if (S.dragging === 'pinch' && e.touches.length === 2) {
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    const dist = Math.hypot(dx, dy);
+    const factor = dist / S.pinchDist0;
+    const newScale = S.pinchScale0 * factor;
+    const r = canvas.getBoundingClientRect();
+    const mx = S.dragStart.midX - r.left;
+    const my = S.dragStart.midY - r.top;
+    S.panX = mx - (mx - S.dragStart.panX) * (newScale / S.pinchScale0);
+    S.panY = my - (my - S.dragStart.panY) * (newScale / S.pinchScale0);
+    S.scale = newScale;
+    render();
+    return;
+  }
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const ddx = t.clientX - S.dragStart.x;
+  const ddy = t.clientY - S.dragStart.y;
+  if (S.dragging === 'pan') {
+    S.panX = S.dragStart.panX + ddx;
+    S.panY = S.dragStart.panY + ddy;
+  } else if (S.dragging === 'crown') {
+    S.crownY = clamp(S.dragStart.crownY + ddy, 0, S.chinY - 10);
+  } else if (S.dragging === 'chin') {
+    S.chinY = clamp(S.dragStart.chinY + ddy, S.crownY + 10, T.height);
+  } else if (S.dragging === 'center') {
+    S.faceCenterX = clamp(S.dragStart.faceCenterX + ddx, 0, T.width);
+  }
+  render();
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+  S.dragging = null;
+  S.dragStart = null;
+  S.pinchDist0 = null;
+  S.pinchScale0 = null;
+});
+
+// ── Export ──
+exportBtn.addEventListener('click', () => {
+  if (!S.img) return;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = T.width;
+  offscreen.height = T.height;
+  const octx = offscreen.getContext('2d');
+
+  // Background
+  octx.fillStyle = T.background;
+  octx.fillRect(0, 0, T.width, T.height);
+
+  // Image with same transforms (no guides/markers)
+  octx.save();
+  const cx = S.panX + (S.img.width * S.scale) / 2;
+  const cy = S.panY + (S.img.height * S.scale) / 2;
+  octx.translate(cx, cy);
+  octx.rotate(S.rotation * Math.PI / 180);
+  octx.translate(-cx, -cy);
+  octx.drawImage(S.img, S.panX, S.panY, S.img.width * S.scale, S.img.height * S.scale);
+  octx.restore();
+
+  // Binary-search JPEG quality to stay under max file size
+  const maxBytes = T.maxFileKB * 1024;
+  let lo = 0.1, hi = 0.96, bestQ = 0;
+  for (let i = 0; i < 12; i++) {
+    const mid = (lo + hi) / 2;
+    const dataUrl = offscreen.toDataURL('image/jpeg', mid);
+    const byteLen = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
+    if (byteLen <= maxBytes) {
+      bestQ = mid;
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  // final render at best quality
+  const finalQ = bestQ || 0.1;
+  const finalDataUrl = offscreen.toDataURL('image/jpeg', finalQ);
+
+  // Convert data URL to blob and download
+  const byteString = atob(finalDataUrl.split(',')[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+  const blob = new Blob([ab], { type: 'image/jpeg' });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `passport-photo-${T.width}x${T.height}.jpg`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const sizeKB = (blob.size / 1024).toFixed(1);
+  exportInfo.textContent = `Saved: ${sizeKB} KB, quality ${Math.round(finalQ * 100)}%`;
+});
+
+// ── Print Layout Export ──
+printBtn.addEventListener('click', exportPrintLayout);
+
+function exportPrintLayout() {
+  if (!S.img) return;
+
+  // 1. Render single photo to offscreen canvas (same as export — background + transformed image, no guides)
+  const photo = document.createElement('canvas');
+  photo.width = T.width;
+  photo.height = T.height;
+  const pctx = photo.getContext('2d');
+  pctx.fillStyle = T.background;
+  pctx.fillRect(0, 0, T.width, T.height);
+  pctx.save();
+  const cx = S.panX + (S.img.width * S.scale) / 2;
+  const cy = S.panY + (S.img.height * S.scale) / 2;
+  pctx.translate(cx, cy);
+  pctx.rotate(S.rotation * Math.PI / 180);
+  pctx.translate(-cx, -cy);
+  pctx.drawImage(S.img, S.panX, S.panY, S.img.width * S.scale, S.img.height * S.scale);
+  pctx.restore();
+
+  // 2. Compute native DPI
+  const dpi = T.width / (T.mmWidth / 25.4);
+
+  // 3. Paper size in pixels at native DPI (100×150 mm)
+  const paper100 = Math.round(100 / 25.4 * dpi);
+  const paper150 = Math.round(150 / 25.4 * dpi);
+
+  // 4. Pick best orientation — whichever fits more photos
+  const colsP = Math.floor(paper100 / T.width);
+  const rowsP = Math.floor(paper150 / T.height);
+  const countP = colsP * rowsP;
+
+  const colsL = Math.floor(paper150 / T.width);
+  const rowsL = Math.floor(paper100 / T.height);
+  const countL = colsL * rowsL;
+
+  let paperW, paperH, cols, rows;
+  if (countL > countP) {
+    paperW = paper150; paperH = paper100;
+    cols = colsL; rows = rowsL;
+  } else {
+    paperW = paper100; paperH = paper150;
+    cols = colsP; rows = rowsP;
+  }
+
+  if (cols === 0 || rows === 0) {
+    exportInfo.textContent = 'Photo too large for 10×15 cm paper';
+    return;
+  }
+
+  // 5. Create paper canvas, fill white
+  const paperCanvas = document.createElement('canvas');
+  paperCanvas.width = paperW;
+  paperCanvas.height = paperH;
+  const papCtx = paperCanvas.getContext('2d');
+  papCtx.fillStyle = '#ffffff';
+  papCtx.fillRect(0, 0, paperW, paperH);
+
+  // 6. Center the grid on paper
+  const gridW = cols * T.width;
+  const gridH = rows * T.height;
+  const offX = Math.round((paperW - gridW) / 2);
+  const offY = Math.round((paperH - gridH) / 2);
+
+  // 7. Tile single-photo canvas
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      papCtx.drawImage(photo, offX + c * T.width, offY + r * T.height);
+    }
+  }
+
+  // 8. Export as JPEG quality 0.95
+  const dataUrl = paperCanvas.toDataURL('image/jpeg', 0.95);
+  const byteString = atob(dataUrl.split(',')[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+  const blob = new Blob([ab], { type: 'image/jpeg' });
+
+  // 9. Download
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'print-layout-10x15.jpg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // 10. Show info
+  const count = cols * rows;
+  exportInfo.textContent = `${count} photos on 10\u00d715 cm (${paperW}\u00d7${paperH} px)`;
+}
+
+// ── Initial render ──
+applyTemplate(TEMPLATES[0]);
+</script>
+</body>
+</html>

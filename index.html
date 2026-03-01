@@ -18,9 +18,16 @@ body {
 }
 .app {
   display: grid;
-  grid-template-columns: auto 280px;
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
   max-width: 960px;
+}
+@media (min-width: 820px) {
+  .app {
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+  }
 }
 h1 {
   grid-column: 1 / -1;
@@ -187,17 +194,10 @@ canvas { display: block; max-width: 100%; height: auto; }
 .btn-secondary:disabled { color: #555; cursor: not-allowed; }
 .export-info { font-size: 12px; color: #888; min-height: 18px; }
 
-@media (max-width: 700px) {
+@media (max-width: 819px) {
   body { padding: 12px; }
-  .app {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    width: 100%;
-  }
   h1 { font-size: 16px; }
-  .canvas-wrap { width: 100% !important; height: auto !important; }
   .measure-row { font-size: 12px; }
-  .measure-row .label { min-width: 0; }
 }
 </style>
 </head>
@@ -419,8 +419,8 @@ function applyTemplate(template) {
   T = template;
   canvas.width = T.width;
   canvas.height = T.height;
-  wrap.style.width = T.width + 'px';
-  wrap.style.height = T.height + 'px';
+  wrap.style.maxWidth = T.width + 'px';
+  wrap.style.aspectRatio = T.width + '/' + T.height;
   // Reset markers to sensible defaults
   S.crownY = (T.topMargin[0] + T.topMargin[1]) / 2;
   S.chinY = T.height - (T.bottomMargin[0] + T.bottomMargin[1]) / 2;

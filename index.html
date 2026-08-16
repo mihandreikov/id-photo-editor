@@ -176,6 +176,16 @@ canvas { display: block; max-width: 100%; height: auto; }
   font-family: inherit;
 }
 
+.privacy-note {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+  background: #222;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.privacy-note strong { color: #bbb; }
+
 .export-area { display: flex; flex-direction: column; gap: 8px; }
 .btn {
   padding: 10px 16px;
@@ -193,6 +203,16 @@ canvas { display: block; max-width: 100%; height: auto; }
 .btn-secondary:hover:not(:disabled) { background: #444; }
 .btn-secondary:disabled { color: #555; cursor: not-allowed; }
 .export-info { font-size: 12px; color: #888; min-height: 18px; }
+
+.app-footer {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  padding-top: 8px;
+}
+.app-footer a { color: #8ab4ff; text-decoration: none; }
+.app-footer a:hover { text-decoration: underline; }
 
 @media (max-width: 819px) {
   body { padding: 12px; }
@@ -250,6 +270,10 @@ canvas { display: block; max-width: 100%; height: auto; }
       </div>
     </div>
 
+    <div class="privacy-note">
+      <strong>Private by design.</strong> Photos are processed locally in your browser and never uploaded.
+    </div>
+
     <div class="export-area">
       <div class="section-title">Export</div>
       <button class="btn btn-primary" id="exportBtn" disabled>Export JPEG (500×653)</button>
@@ -258,6 +282,10 @@ canvas { display: block; max-width: 100%; height: auto; }
       <div class="export-info" id="exportInfo"></div>
     </div>
   </div>
+
+  <footer class="app-footer">
+    <a href="https://mihandreikov.github.io/id-photo-editor/">mihandreikov.github.io/id-photo-editor</a>
+  </footer>
 </div>
 
 <script>
@@ -277,7 +305,7 @@ const TEMPLATES = [
   },
   {
     id: 'schengen',
-    name: 'Schengen / EU (413×531 px)',
+    name: 'Schengen visa (35×45 mm at 300 ppi)',
     width: 413, height: 531,
     mmWidth: 35, mmHeight: 45,
     topMargin: [35, 70],
@@ -289,7 +317,7 @@ const TEMPLATES = [
   },
   {
     id: 'us',
-    name: 'USA (600×600 px)',
+    name: 'U.S. visa digital (600×600 px)',
     width: 600, height: 600,
     mmWidth: 51, mmHeight: 51,
     topMargin: [56, 94],
